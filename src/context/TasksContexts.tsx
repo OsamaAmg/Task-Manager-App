@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, Children } from "react";
 import type Task from "@/types/Task";
 
+
 type TasksContextType = {
   tasks: Task[];
   addTask: (task: Task) => void;
@@ -30,7 +31,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [tasks]);
 
-
+  // Omit<Task, "id"> means we expect a Task object without the 'id' property.
+  // This is useful because the form creates a task without an id, and we generate the id here.
   const addTask = (task: Omit<Task, "id">) => {
     const newTask: Task = {
       ...task,

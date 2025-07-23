@@ -11,13 +11,6 @@ export default function Home() {
   return (
     <div style={{ padding: '2rem' }}>
       <TaskForm onAddTask={addTask} />
-      {/*
-      <TasksList 
-        tasks={tasks} 
-        onDeleteTask={deleteTask}
-        onToggleComplete={toggleTask}
-      /> 
-      */}
       
     </div>
   );
