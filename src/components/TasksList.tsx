@@ -17,7 +17,7 @@ function TasksList({ tasks, onToggleComplete, onDeleteTask }: TasksListProps) {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4">
             {tasks.map((task) => (
                 <TaskItem 
                     key={task.id} 
