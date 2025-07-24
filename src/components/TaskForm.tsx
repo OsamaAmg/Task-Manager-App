@@ -5,8 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Plus } from "lucide-react";
-import type Task from '@/types/Task';
+import { toast } from "sonner";
+import { CalendarDays, Plus, CheckCircle } from "lucide-react";
+
+// Mock Task type for demonstration
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: Date;
+  dueDate?: Date;
+}
 
 interface TaskFormProps {
   onAddTask: (task: Task) => void;
@@ -17,32 +28,48 @@ function TaskForm({ onAddTask }: TaskFormProps) {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
+    
+    // Basic validation
     if (!title.trim()) {
-      alert('Title is required');
+      toast.error("Task title is required");
       return;
     }
 
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      description: description.trim() || undefined,
-      completed: false,
-      priority: priority,
-      createdAt: new Date(),
-      dueDate: dueDate ? new Date(dueDate) : undefined
-    };
+    setIsSubmitting(true);
 
-    onAddTask(newTask);
+    try {
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: title.trim(),
+        description: description.trim() || undefined,
+        completed: false,
+        priority: priority,
+        createdAt: new Date(),
+        dueDate: dueDate ? new Date(dueDate) : undefined
+      };
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setPriority('medium');
-    setDueDate('');
+      // Call the parent function to add the task
+      onAddTask(newTask);
+
+      // Show success toast only after task is successfully created
+      toast.success(`Task "${newTask.title}" created successfully!`);
+
+      // Reset form only after successful creation
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setDueDate('');
+
+    } catch (error) {
+      // Handle any errors during task creation
+      toast.error("Failed to create task. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,7 +82,7 @@ function TaskForm({ onAddTask }: TaskFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Task Title</Label>
               <Input
@@ -64,6 +91,7 @@ function TaskForm({ onAddTask }: TaskFormProps) {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter task title..."
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -76,12 +104,17 @@ function TaskForm({ onAddTask }: TaskFormProps) {
                 placeholder="Enter task description..."
                 rows={3}
                 className="resize-none"
+                disabled={isSubmitting}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
+              <Select 
+                value={priority} 
+                onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
@@ -103,14 +136,24 @@ function TaskForm({ onAddTask }: TaskFormProps) {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
+            <Button type="button" onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Task...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </>
+              )}
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
     </div>
