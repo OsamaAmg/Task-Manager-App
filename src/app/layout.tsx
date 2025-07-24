@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Nav from "@/components/Nav";
 import { TaskProvider } from "@/context/TasksContexts";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -27,15 +26,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <TaskProvider>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <Nav />
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <TaskProvider>
           {children}
           <Toaster />
-        </body>
-      </TaskProvider>
+        </TaskProvider>
+      </body>
     </html>
   );
 }
