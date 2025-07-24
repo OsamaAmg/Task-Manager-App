@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarDays, Clock, Trash2, Eye, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import type Task from "@/types/Task";
@@ -9,9 +10,17 @@ interface TaskItemProps {
     task: Task;
     onToggleComplete: (id: string, completed: boolean) => void;
     onDeleteTask: (id: string) => void;
+    isSelected?: boolean;
+    onSelectTask?: (id: string, selected: boolean) => void;
 }
 
-function TaskItem({ task, onToggleComplete, onDeleteTask }: TaskItemProps) {
+function TaskItem({ 
+    task, 
+    onToggleComplete, 
+    onDeleteTask, 
+    isSelected = false, 
+    onSelectTask 
+}: TaskItemProps) {
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
     
     const getPriorityColor = (priority: string) => {
@@ -33,24 +42,43 @@ function TaskItem({ task, onToggleComplete, onDeleteTask }: TaskItemProps) {
     };
 
     return (
-        <Card className="w-full max-w-lg mx-auto hover:shadow-md transition-shadow">
+        <Card className={`w-full max-w-lg mx-auto hover:shadow-md transition-shadow ${
+            isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+        }`}>
             <CardContent className="p-4">
                 <div className="space-y-3">
-                    {/* Header with title and priority */}
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1">
-                            <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
-                            <h3 className={`font-medium text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                {task.title}
-                            </h3>
+                    {/* Selection checkbox and header */}
+                    <div className="flex items-start gap-2">
+                        {onSelectTask && (
+                            <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => onSelectTask(task.id, checked as boolean)}
+                                className="mt-1"
+                            />
+                        )}
+                        
+                        <div className="flex items-start justify-between gap-2 flex-1">
+                            <div className="flex items-center gap-2 flex-1">
+                                <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
+                                <h3 className={`font-medium text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                                    {task.title}
+                                </h3>
+                            </div>
+                            <Badge variant={getPriorityVariant(task.priority)} className="text-xs">
+                                {task.priority.toUpperCase()}
+                            </Badge>
                         </div>
-                        <Badge variant={getPriorityVariant(task.priority)} className="text-xs">
-                            {task.priority.toUpperCase()}
-                        </Badge>
                     </div>
 
+                    {/* Description (if exists) */}
+                    {task.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 ml-6">
+                            {task.description}
+                        </p>
+                    )}
+
                     {/* Dates */}
-                    <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="space-y-1 text-xs text-muted-foreground ml-6">
                         <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
@@ -58,34 +86,34 @@ function TaskItem({ task, onToggleComplete, onDeleteTask }: TaskItemProps) {
                         {task.dueDate && (
                             <div className="flex items-center gap-1">
                                 <CalendarDays className="h-3 w-3" />
-                                <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                                <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                                </span>
                             </div>
                         )}
                     </div>
 
                     {/* Overdue warning */}
                     {isOverdue && (
-                        <div className="flex items-center gap-1 text-red-600 text-xs">
+                        <div className="flex items-center gap-1 text-red-600 text-xs ml-6">
                             <AlertTriangle className="h-3 w-3" />
                             <span>This task is overdue!</span>
                         </div>
                     )}
 
                     {/* Status badge */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between ml-6">
                         <Badge variant={task.completed ? 'secondary' : 'outline'} className="text-xs">
                             {task.completed ? 'Completed' : 'Pending'}
                         </Badge>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center justify-between pt-2 border-t ml-6">
                         <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={task.completed}
-                                onChange={(e) => onToggleComplete(task.id, e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                onCheckedChange={(checked) => onToggleComplete(task.id, checked as boolean)}
                             />
                             <span className="text-xs text-muted-foreground">
                                 {task.completed ? 'Completed' : 'Mark complete'}

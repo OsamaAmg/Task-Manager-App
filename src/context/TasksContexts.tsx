@@ -8,6 +8,7 @@ type TasksContextType = {
   addTask: (task: Omit<Task, "id">) => void;
   deleteTask: (id: string) => void;
   deleteTasks: (ids: string[]) => void; // New batch delete function
+  updateTask: (id: string, updatedTask: Partial<Task>) => void; // New update function
   toggleTask: (id: string) => void;
 };
 
@@ -35,6 +36,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const newTask: Task = {
       ...task,
       id: Date.now().toString(),
+      createdAt: new Date().toISOString(), // Ensure createdAt is set
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
@@ -53,6 +55,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // New update task function
+  const updateTask = (id: string, updatedTask: Partial<Task>) => {
+    console.log('Updating task:', id, updatedTask); // Debug log
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, ...updatedTask } : task
+      )
+    );
+  };
+
   const toggleTask = (id: string) => {
     setTasks(prevTasks =>
       prevTasks.map((task) =>
@@ -62,7 +74,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <TasksContext.Provider value={{ tasks, addTask, toggleTask, deleteTask, deleteTasks }}>
+    <TasksContext.Provider value={{ tasks, addTask, toggleTask, deleteTask, deleteTasks, updateTask }}>
       {children}
     </TasksContext.Provider>
   );

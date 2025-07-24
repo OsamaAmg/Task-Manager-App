@@ -5,9 +5,19 @@ interface TasksListProps {
     tasks: Task[];
     onToggleComplete: (id: string, completed: boolean) => void;
     onDeleteTask: (id: string) => void;
+    selectedTasks?: string[];
+    onSelectTask?: (id: string, selected: boolean) => void;
+    gridLayout?: boolean;
 }
 
-function TasksList({ tasks, onToggleComplete, onDeleteTask }: TasksListProps) {
+function TasksList({ 
+    tasks, 
+    onToggleComplete, 
+    onDeleteTask, 
+    selectedTasks = [], 
+    onSelectTask,
+    gridLayout = true 
+}: TasksListProps) {
     if (tasks.length === 0) {
         return (
             <div className="text-center py-8">
@@ -24,6 +34,8 @@ function TasksList({ tasks, onToggleComplete, onDeleteTask }: TasksListProps) {
                     task={task} 
                     onToggleComplete={onToggleComplete}
                     onDeleteTask={onDeleteTask}
+                    isSelected={selectedTasks.includes(task.id)}
+                    onSelectTask={onSelectTask}
                 />
             ))}
         </div>
@@ -31,4 +43,3 @@ function TasksList({ tasks, onToggleComplete, onDeleteTask }: TasksListProps) {
 }
 
 export default TasksList;
-
