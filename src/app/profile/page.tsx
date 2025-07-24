@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Phone, MapPin, Edit2, Save, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { User, Mail, Phone, MapPin, Edit2, Save, X, LogOut } from "lucide-react";
 
 interface UserProfile {
   name: string;
@@ -50,6 +51,15 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
+  const handleSignOut = () => {
+    // Here you would typically handle sign out logic
+    // e.g., clear tokens, redirect to login, etc.
+    console.log('User signed out');
+    // Example: redirect to login or call your auth service
+    // router.push('/login');
+    // or signOut() from your auth provider
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -64,23 +74,52 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Profile</h1>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Button onClick={handleSave} className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              Save Changes
-            </Button>
-            <Button variant="outline" onClick={handleCancel} className="flex items-center gap-2">
-              <X className="h-4 w-4" />
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2">
-            <Edit2 className="h-4 w-4" />
-            Edit Profile
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <Button onClick={handleSave} className="flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                Save Changes
+              </Button>
+              <Button variant="outline" onClick={handleCancel} className="flex items-center gap-2">
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2">
+                <Edit2 className="h-4 w-4" />
+                Edit Profile
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300">
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You will be logged out of your account and redirected to the login page.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleSignOut}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Sign Out
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
