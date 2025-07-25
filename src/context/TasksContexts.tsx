@@ -7,8 +7,8 @@ type TasksContextType = {
   tasks: Task[];
   addTask: (task: Omit<Task, "id">) => void;
   deleteTask: (id: string) => void;
-  deleteTasks: (ids: string[]) => void; // New batch delete function
-  updateTask: (id: string, updatedTask: Partial<Task>) => void; // New update function
+  deleteTasks: (ids: string[]) => void; 
+  updateTask: (id: string, updatedTask: Partial<Task>) => void; 
   toggleTask: (id: string) => void;
 };
 
@@ -17,6 +17,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
 
+
   // Load tasks from localStorage
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks');
@@ -24,6 +25,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       setTasks(JSON.parse(savedTasks));
     }
   }, []);
+
 
   // Save tasks to localStorage
   useEffect(() => {
@@ -36,7 +38,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const newTask: Task = {
       ...task,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString(), // Ensure createdAt is set
+      createdAt: new Date().toISOString(),
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
@@ -45,19 +47,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     setTasks(prevTasks => prevTasks.filter((task) => task.id !== id));
   };
 
-  // New batch delete function - more efficient for multiple deletions
+
   const deleteTasks = (ids: string[]) => {
-    console.log('Batch deleting tasks:', ids); // Debug log
     setTasks(prevTasks => {
       const filteredTasks = prevTasks.filter(task => !ids.includes(task.id));
-      console.log('Tasks before:', prevTasks.length, 'Tasks after:', filteredTasks.length); // Debug log
       return filteredTasks;
     });
   };
 
-  // New update task function
+
   const updateTask = (id: string, updatedTask: Partial<Task>) => {
-    console.log('Updating task:', id, updatedTask); // Debug log
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === id ? { ...task, ...updatedTask } : task

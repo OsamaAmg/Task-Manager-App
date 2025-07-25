@@ -26,17 +26,12 @@ import { useTasks } from "@/context/TasksContexts";
 import type Task from "@/types/Task";
 
 export default function TasksPage() {
+
   const { tasks, addTask, toggleTask, deleteTask, deleteTasks } = useTasks();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "completed" | "pending"
-  >("all");
-  const [priorityFilter, setPriorityFilter] = useState<
-    "all" | "high" | "medium" | "low"
-  >("all");
-  const [sortBy, setSortBy] = useState<
-    "createdAt" | "dueDate" | "priority" | "title"
-  >("createdAt");
+  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending">("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "high" | "medium" | "low">("all");
+  const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority" | "title">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
@@ -88,6 +83,8 @@ export default function TasksPage() {
     });
   }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
 
+
+
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedTasks.length / tasksPerPage);
   const startIndex = (currentPage - 1) * tasksPerPage;
@@ -95,9 +92,11 @@ export default function TasksPage() {
   const paginatedTasks = filteredAndSortedTasks.slice(startIndex, endIndex);
 
   // Reset to first page when filters change
+  
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
+
 
   // Selection handlers
   const handleSelectTask = (id: string, selected: boolean) => {
@@ -111,15 +110,12 @@ export default function TasksPage() {
   };
 
   // Bulk operations - only delete functionality
-  // Update your destructuring to include deleteTasks
 
-  // Updated handleBulkDelete function
+  // handleBulkDelete function
+
   const handleBulkDelete = () => {
     if (selectedTasks.length === 0) return;
 
-    console.log("Deleting tasks:", selectedTasks); // Debug log
-
-    // Use the new batch delete function
     deleteTasks(selectedTasks);
 
     // Clear selection after deletion
