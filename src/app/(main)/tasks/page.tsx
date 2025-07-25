@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   Search,
   Filter,
@@ -20,13 +21,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import TasksList from "@/components/TasksList";
 import { useTasks } from "@/context/TasksContexts";
 import type Task from "@/types/Task";
 
 export default function TasksPage() {
-
   const { tasks, addTask, toggleTask, deleteTask, deleteTasks } = useTasks();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending">("all");
@@ -34,6 +36,10 @@ export default function TasksPage() {
   const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority" | "title">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+
+  // Dialog states
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,8 +89,6 @@ export default function TasksPage() {
     });
   }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
 
-
-
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedTasks.length / tasksPerPage);
   const startIndex = (currentPage - 1) * tasksPerPage;
@@ -92,11 +96,9 @@ export default function TasksPage() {
   const paginatedTasks = filteredAndSortedTasks.slice(startIndex, endIndex);
 
   // Reset to first page when filters change
-  
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
-
 
   // Selection handlers
   const handleSelectTask = (id: string, selected: boolean) => {
@@ -109,22 +111,55 @@ export default function TasksPage() {
     setSelectedTasks(checked ? paginatedTasks.map((task) => task.id) : []);
   };
 
-  // Bulk operations - only delete functionality
-
-  // handleBulkDelete function
-
-  const handleBulkDelete = () => {
+  // Enhanced delete handlers with confirmation
+  const handleBulkDelete = async () => {
     if (selectedTasks.length === 0) return;
 
-    deleteTasks(selectedTasks);
+    setBulkDeleteDialogOpen(false);
+    setIsDeleting(true);
 
-    // Clear selection after deletion
-    setSelectedTasks([]);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      deleteTasks(selectedTasks);
+      setSelectedTasks([]);
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      // You could add error handling here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Enhanced individual delete handler
+  const handleDeleteTask = async (taskId: string) => {
+    setIsDeleting(true);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      deleteTask(taskId);
+      
+      // Remove from selection if it was selected
+      setSelectedTasks(prev => prev.filter(id => id !== taskId));
+    } catch (error) {
+      console.error('Delete task error:', error);
+      // You could add error handling here
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const clearSelection = () => {
     setSelectedTasks([]);
   };
+
+  // Get selected task titles for display
+  const selectedTaskTitles = selectedTasks
+    .map(id => tasks.find(task => task.id === id)?.title)
+    .filter(Boolean);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -225,15 +260,72 @@ export default function TasksPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleBulkDelete}
-                  className="flex items-center gap-1"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete Selected
-                </Button>
+                <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex items-center gap-1"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3 w-3" />
+                      )}
+                      {isDeleting ? 'Deleting...' : 'Delete Selected'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        Delete {selectedTasks.length} Task{selectedTasks.length > 1 ? 's' : ''}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>Are you sure you want to delete the following {selectedTasks.length} task{selectedTasks.length > 1 ? 's' : ''}? This action cannot be undone.</p>
+                        <div className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-sm">
+                          <ul className="space-y-1">
+                            {selectedTaskTitles.slice(0, 5).map((title, index) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                                {title}
+                              </li>
+                            ))}
+                            {selectedTaskTitles.length > 5 && (
+                              <li className="text-gray-500 italic">
+                                ...and {selectedTaskTitles.length - 5} more
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleBulkDelete}
+                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete {selectedTasks.length} Task{selectedTasks.length > 1 ? 's' : ''}
+                          </>
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
                 <Button size="sm" variant="ghost" onClick={clearSelection}>
                   <X className="h-3 w-3" />
                 </Button>
@@ -262,7 +354,7 @@ export default function TasksPage() {
       {/* Tasks List with Grid Layout */}
       <TasksList
         tasks={paginatedTasks}
-        onDeleteTask={deleteTask}
+        onDeleteTask={handleDeleteTask}
         onToggleComplete={(id, completed) => toggleTask(id)}
         selectedTasks={selectedTasks}
         onSelectTask={handleSelectTask}
