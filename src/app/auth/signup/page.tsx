@@ -1,11 +1,17 @@
-'use client'
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, User, Github, Chrome } from "lucide-react";
@@ -13,10 +19,10 @@ import { toast } from "sonner";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -24,7 +30,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
@@ -57,31 +63,38 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-
     setIsLoading(true);
-    
+
     try {
-      // Replace with your actual signup logic
-      console.log('Signup attempt:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success("Account created successfully! Please check your email to verify your account.");
-      
-      // Redirect to login or dashboard
-      // router.push('/auth/login');
-      
-    } catch (error) {
-      toast.error("Failed to create account. Please try again.");
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success("Account created!");
+      // redirect to dashboard
+      // router.push("/tasks");
+    } catch {
+      toast.error("Signup failed");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialSignup = async (provider: 'google' | 'github') => {
+  const handleSocialSignup = async (provider: "google" | "github") => {
     try {
       // Replace with your social auth logic
       console.log(`${provider} signup`);
@@ -92,11 +105,14 @@ export default function SignUpPage() {
   };
 
   const getPasswordStrength = (password: string) => {
-    if (password.length === 0) return { strength: 0, text: '', color: '' };
-    if (password.length < 4) return { strength: 1, text: 'Weak', color: 'text-red-500' };
-    if (password.length < 8) return { strength: 2, text: 'Fair', color: 'text-yellow-500' };
-    if (password.length < 12) return { strength: 3, text: 'Good', color: 'text-blue-500' };
-    return { strength: 4, text: 'Strong', color: 'text-green-500' };
+    if (password.length === 0) return { strength: 0, text: "", color: "" };
+    if (password.length < 4)
+      return { strength: 1, text: "Weak", color: "text-red-500" };
+    if (password.length < 8)
+      return { strength: 2, text: "Fair", color: "text-yellow-500" };
+    if (password.length < 12)
+      return { strength: 3, text: "Good", color: "text-blue-500" };
+    return { strength: 4, text: "Strong", color: "text-green-500" };
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
@@ -106,9 +122,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-3xl font-bold">
-              Create Account
-            </CardTitle>
+            <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
             <CardDescription className="text-muted-foreground">
               Sign up to get started with your account
             </CardDescription>
@@ -116,17 +130,17 @@ export default function SignUpPage() {
           <CardContent className="space-y-6">
             {/* Social Signup Buttons */}
             <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => handleSocialSignup('google')}
+              <Button
+                variant="outline"
+                onClick={() => handleSocialSignup("google")}
                 className="h-11"
               >
                 <Chrome className="h-4 w-4 mr-2" />
                 Google
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleSocialSignup('github')}
+              <Button
+                variant="outline"
+                onClick={() => handleSocialSignup("github")}
                 className="h-11"
               >
                 <Github className="h-4 w-4 mr-2" />
@@ -139,7 +153,9 @@ export default function SignUpPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -156,7 +172,7 @@ export default function SignUpPage() {
                     type="text"
                     placeholder="Enter your full name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
                     disabled={isLoading}
                     className="pl-9 h-11"
                   />
@@ -171,10 +187,10 @@ export default function SignUpPage() {
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
-                    type="email"  
+                    type="email"
                     placeholder="Enter your email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
                     disabled={isLoading}
                     className="pl-9 h-11"
                   />
@@ -192,7 +208,9 @@ export default function SignUpPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
                     disabled={isLoading}
                     className="pl-9 pr-9 h-11"
                   />
@@ -201,18 +219,27 @@ export default function SignUpPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
                 {formData.password && (
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 bg-muted rounded-full h-2">
-                      <div 
+                      <div
                         className={`h-2 rounded-full transition-all duration-300 ${
-                          passwordStrength.strength === 1 ? 'w-1/4 bg-red-500' :
-                          passwordStrength.strength === 2 ? 'w-2/4 bg-yellow-500' :
-                          passwordStrength.strength === 3 ? 'w-3/4 bg-blue-500' :
-                          passwordStrength.strength === 4 ? 'w-full bg-green-500' : 'w-0'
+                          passwordStrength.strength === 1
+                            ? "w-1/4 bg-red-500"
+                            : passwordStrength.strength === 2
+                            ? "w-2/4 bg-yellow-500"
+                            : passwordStrength.strength === 3
+                            ? "w-3/4 bg-blue-500"
+                            : passwordStrength.strength === 4
+                            ? "w-full bg-green-500"
+                            : "w-0"
                         }`}
                       />
                     </div>
@@ -224,7 +251,10 @@ export default function SignUpPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium"
+                >
                   Confirm Password
                 </Label>
                 <div className="relative">
@@ -234,7 +264,9 @@ export default function SignUpPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
                     disabled={isLoading}
                     className="pl-9 pr-9 h-11"
                   />
@@ -243,7 +275,11 @@ export default function SignUpPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -252,15 +288,23 @@ export default function SignUpPage() {
                 <Checkbox
                   id="terms"
                   checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setAgreeToTerms(checked as boolean)
+                  }
                 />
-                <Label htmlFor="terms" className="text-sm text-muted-foreground leading-none">
-                  I agree to the{' '}
+                <Label
+                  htmlFor="terms"
+                  className="text-sm text-muted-foreground leading-none"
+                >
+                  I agree to the{" "}
                   <Link href="/terms" className="text-primary hover:underline">
                     Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="/privacy" className="text-primary hover:underline">
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:underline"
+                  >
                     Privacy Policy
                   </Link>
                 </Label>
@@ -277,13 +321,13 @@ export default function SignUpPage() {
                     Creating account...
                   </>
                 ) : (
-                  'Create Account'
+                  "Create Account"
                 )}
               </Button>
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link
                 href="/auth/login"
                 className="text-primary hover:underline font-medium"
