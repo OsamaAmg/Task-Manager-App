@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Add this import
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ interface LoadingStates {
 }
 
 export default function ProfilePage() {
+  const router = useRouter(); // Add this line
   const [isEditing, setIsEditing] = useState(false);
   
   // Mock user data - replace with actual user data from your auth system
@@ -188,18 +190,23 @@ export default function ProfilePage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Here you would typically handle sign out logic
-      // e.g., clear tokens, redirect to login, etc.
+      // e.g., clear tokens, call your auth service, etc.
       console.log('User signed out');
       
-      // Example: redirect to login or call your auth service
-      // router.push('/login');
-      // or signOut() from your auth provider
+      // Clear any stored auth data
+      // localStorage.removeItem('token'); // if using localStorage
+      // or call your auth provider's signOut method
       
       setSuccessMessage('Successfully signed out!');
+      
+      // Redirect to landing page after a brief delay to show success message
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+      
     } catch (error) {
       setErrorMessage('Failed to sign out. Please try again.');
       console.error('Sign out error:', error);
-    } finally {
       setLoading('signingOut', false);
     }
   };
@@ -275,7 +282,7 @@ export default function ProfilePage() {
                       Sign Out Confirmation
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to sign out? You will be logged out of your account and redirected to the login page. Any unsaved changes will be lost.
+                      Are you sure you want to sign out? You will be logged out of your account and redirected to the home page. Any unsaved changes will be lost.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

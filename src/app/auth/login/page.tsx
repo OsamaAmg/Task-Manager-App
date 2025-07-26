@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Add this import
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,31 +16,47 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter(); // Add this line
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Replace with your actual login logic
-      // const result = await signIn('credentials', { email, password });
-      console.log('Login attempt:', { email, password });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        // Try to parse error message; if fail, use generic
+        let errorMsg = 'Invalid email or password';
+        try {
+          const errData = await res.json();
+          if (errData?.error) errorMsg = errData.error;
+        } catch {}
+        toast.error(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
       toast.success("Welcome back!");
-      // Redirect to dashboard or home page
-      // router.push('/dashboard');
       
-    } catch (error) {
-      toast.error("Invalid email or password");
+      // Add a small delay to ensure the toast is visible
+      setTimeout(() => {
+        router.push('/Dashboard');
+      }, 1000);
+
+    } catch (err) {
+      toast.error("Login failed. Try again.");
     } finally {
       setIsLoading(false);
     }
