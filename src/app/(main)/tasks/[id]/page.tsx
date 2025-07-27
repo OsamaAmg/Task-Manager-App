@@ -33,10 +33,11 @@ export default function TaskDetailPage() {
     const params = useParams();
     const taskId = params.id as string;
     
-    const { tasks, toggleTask, deleteTask, updateTask } = useTasks();
+    const { toggleTask, deleteTask, updateTask } = useTasks();
     
-    // Find the task
-    const task = tasks.find(t => t.id === taskId);
+    // Task state
+    const [task, setTask] = useState<Task | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     
     // Form state
     const [editedTask, setEditedTask] = useState<Task | null>(null);
@@ -46,6 +47,70 @@ export default function TaskDetailPage() {
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [successMessage, setSuccessMessage] = useState<string>('');
+    
+    // Helper function to get auth token
+    const getAuthToken = () => {
+        return localStorage.getItem('token');
+    };
+
+    // Fetch task from API
+    const fetchTask = async () => {
+        try {
+            setIsLoading(true);
+            setErrorMessage('');
+            const token = getAuthToken();
+            
+            if (!token) {
+                router.push('/auth/login');
+                return;
+            }
+
+            const response = await fetch(`/api/tasks/${taskId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    router.push('/auth/login');
+                    return;
+                }
+                if (response.status === 404) {
+                    setErrorMessage('Task not found');
+                    return;
+                }
+                throw new Error(`Failed to fetch task: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            // Map API response to frontend format
+            const mappedTask = {
+                id: data.task._id,
+                title: data.task.title,
+                description: data.task.description,
+                completed: data.task.status === 'completed',
+                priority: data.task.priority,
+                createdAt: data.task.createdAt,
+                dueDate: data.task.dueDate
+            };
+            setTask(mappedTask);
+        } catch (error) {
+            console.error('Error fetching task:', error);
+            setErrorMessage(error instanceof Error ? error.message : 'Failed to fetch task');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Load task on component mount
+    useEffect(() => {
+        if (taskId) {
+            fetchTask();
+        }
+    }, [taskId]); // eslint-disable-line react-hooks/exhaustive-deps
     
     // Loading states
     const [loadingStates, setLoadingStates] = useState<LoadingStates>({
@@ -121,8 +186,22 @@ export default function TaskDetailPage() {
         setValidationErrors({});
     };
 
-    // If task not found
-    if (!task) {
+    // If loading
+    if (isLoading) {
+        return (
+            <div className="container mx-auto p-6">
+                <div className="flex items-center justify-center h-64">
+                    <div className="flex items-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span>Loading task...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // If task not found or error
+    if (!task || errorMessage) {
         return (
             <div className="container mx-auto p-6">
                 <div className="flex items-center gap-4 mb-6">
@@ -138,8 +217,12 @@ export default function TaskDetailPage() {
                 <Card>
                     <CardContent className="p-8 text-center">
                         <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold mb-2">Task Not Found</h2>
-                        <p className="text-muted-foreground">The task you're looking for doesn't exist or may have been deleted.</p>
+                        <h2 className="text-xl font-semibold mb-2">
+                            {errorMessage ? 'Error' : 'Task Not Found'}
+                        </h2>
+                        <p className="text-muted-foreground">
+                            {errorMessage || "The task you're looking for doesn't exist or may have been deleted."}
+                        </p>
                     </CardContent>
                 </Card>
             </div>

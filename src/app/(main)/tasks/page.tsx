@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,15 +23,33 @@ import {
   ChevronRight,
   AlertCircle,
   Loader2,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
 import TasksList from "@/components/TasksList";
-import { useTasks } from "@/context/TasksContexts";
-import type Task from "@/types/Task";
+
+// Define the Task interface based on your database model
+interface Task {
+  _id: string;
+  title: string;
+  description?: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
 
 export default function TasksPage() {
-  const { tasks, addTask, toggleTask, deleteTask, deleteTasks } = useTasks();
+  // State management
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filter and search states
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending" | "in-progress">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "high" | "medium" | "low">("all");
   const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority" | "title">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -40,22 +58,185 @@ export default function TasksPage() {
   // Dialog states
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 9; // 3 columns layout
+
+  // Helper function to get authorization token
+  const getAuthToken = () => {
+    return localStorage.getItem('token');
+  };
+
+  // API call to fetch tasks
+  const fetchTasks = async () => {
+    try {
+      setError(null);
+      const token = getAuthToken();
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/tasks', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem('token');
+          window.location.href = '/auth/login';
+          return;
+        }
+        throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setTasks(data.tasks || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // API call to toggle task status
+  const toggleTaskStatus = async (taskId: string) => {
+    try {
+      const token = getAuthToken();
+      const task = tasks.find(t => t._id === taskId);
+      
+      if (!task || !token) return;
+
+      // Determine new status
+      let newStatus: 'pending' | 'in-progress' | 'completed';
+      if (task.status === 'completed') {
+        newStatus = 'pending';
+      } else if (task.status === 'pending') {
+        newStatus = 'in-progress';
+      } else {
+        newStatus = 'completed';
+      }
+
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      const updatedTask = await response.json();
+      
+      // Update local state
+      setTasks(prev => prev.map(t => 
+        t._id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
+      ));
+    } catch (error) {
+      console.error('Error toggling task:', error);
+      setError('Failed to update task status');
+    }
+  };
+
+  // API call to delete a single task
+  const deleteTask = async (taskId: string) => {
+    try {
+      setIsDeleting(true);
+      const token = getAuthToken();
+      
+      if (!token) return;
+
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task');
+      }
+
+      // Update local state
+      setTasks(prev => prev.filter(t => t._id !== taskId));
+      setSelectedTasks(prev => prev.filter(id => id !== taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setError('Failed to delete task');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // API call to delete multiple tasks
+  const deleteTasks = async (taskIds: string[]) => {
+    try {
+      setIsDeleting(true);
+      const token = getAuthToken();
+      
+      if (!token) return;
+
+      // Delete tasks in parallel
+      const deletePromises = taskIds.map(taskId =>
+        fetch(`/api/tasks/${taskId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+      );
+
+      const responses = await Promise.all(deletePromises);
+      
+      // Check if all deletions were successful
+      const failed = responses.filter(r => !r.ok);
+      if (failed.length > 0) {
+        throw new Error(`Failed to delete ${failed.length} tasks`);
+      }
+
+      // Update local state
+      setTasks(prev => prev.filter(t => !taskIds.includes(t._id)));
+      setSelectedTasks([]);
+    } catch (error) {
+      console.error('Error deleting tasks:', error);
+      setError('Failed to delete some tasks');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Refresh tasks
+  const refreshTasks = async () => {
+    setIsRefreshing(true);
+    await fetchTasks();
+    setIsRefreshing(false);
+  };
+
+  // Load tasks on component mount
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   // Filtered and sorted tasks
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = tasks.filter((task) => {
       const matchesSearch = task.title
         .toLowerCase()
-        .includes(searchTerm.toLowerCase()); //true or false
+        .includes(searchTerm.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "completed" && task.completed) ||
-        (statusFilter === "pending" && !task.completed); // true or false
+        statusFilter === "all" || task.status === statusFilter;
 
       const matchesPriority =
         priorityFilter === "all" || task.priority === priorityFilter;
@@ -71,8 +252,7 @@ export default function TasksPage() {
           comparison = a.title.localeCompare(b.title);
           break;
         case "createdAt":
-          comparison =
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           break;
         case "dueDate":
           const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
@@ -96,7 +276,7 @@ export default function TasksPage() {
   const paginatedTasks = filteredAndSortedTasks.slice(startIndex, endIndex);
 
   // Reset to first page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
 
@@ -108,7 +288,7 @@ export default function TasksPage() {
   };
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedTasks(checked ? paginatedTasks.map((task) => task.id) : []);
+    setSelectedTasks(checked ? paginatedTasks.map((task) => task._id) : []);
   };
 
   // Enhanced delete handlers with confirmation
@@ -116,40 +296,7 @@ export default function TasksPage() {
     if (selectedTasks.length === 0) return;
 
     setBulkDeleteDialogOpen(false);
-    setIsDeleting(true);
-
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      deleteTasks(selectedTasks);
-      setSelectedTasks([]);
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      // You could add error handling here
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Enhanced individual delete handler
-  const handleDeleteTask = async (taskId: string) => {
-    setIsDeleting(true);
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      deleteTask(taskId);
-      
-      // Remove from selection if it was selected
-      setSelectedTasks(prev => prev.filter(id => id !== taskId));
-    } catch (error) {
-      console.error('Delete task error:', error);
-      // You could add error handling here
-    } finally {
-      setIsDeleting(false);
-    }
+    await deleteTasks(selectedTasks);
   };
 
   const clearSelection = () => {
@@ -158,17 +305,71 @@ export default function TasksPage() {
 
   // Get selected task titles for display
   const selectedTaskTitles = selectedTasks
-    .map(id => tasks.find(task => task.id === id)?.title)
+    .map(id => tasks.find(task => task._id === id)?.title)
     .filter(Boolean);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading tasks...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tasks</h1>
-        <div className="text-sm text-muted-foreground">
-          {filteredAndSortedTasks.length} of {tasks.length} tasks
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshTasks}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button
+            onClick={() => window.location.href = '/Dashboard'}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+          <div className="text-sm text-muted-foreground">
+            {filteredAndSortedTasks.length} of {tasks.length} tasks
+          </div>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setError(null)}
+                className="ml-auto"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search and Filters */}
       <Card>
@@ -202,6 +403,7 @@ export default function TasksPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
@@ -341,7 +543,7 @@ export default function TasksPage() {
           <Checkbox
             checked={
               paginatedTasks.length > 0 &&
-              paginatedTasks.every((task) => selectedTasks.includes(task.id))
+              paginatedTasks.every((task) => selectedTasks.includes(task._id))
             }
             onCheckedChange={handleSelectAll}
           />
@@ -351,15 +553,38 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Tasks List with Grid Layout */}
-      <TasksList
-        tasks={paginatedTasks}
-        onDeleteTask={handleDeleteTask}
-        onToggleComplete={(id, completed) => toggleTask(id)}
-        selectedTasks={selectedTasks}
-        onSelectTask={handleSelectTask}
-        gridLayout={true}
-      />
+      {/* Tasks List */}
+      {paginatedTasks.length > 0 ? (
+        <TasksList
+          tasks={paginatedTasks.map(task => ({
+            ...task,
+            id: task._id, // Map _id to id for compatibility
+            completed: task.status === 'completed'
+          }))}
+          onDeleteTask={deleteTask}
+          onToggleComplete={(id) => toggleTaskStatus(id)}
+          selectedTasks={selectedTasks}
+          onSelectTask={handleSelectTask}
+          gridLayout={true}
+        />
+      ) : (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="text-muted-foreground">
+              {tasks.length === 0 ? (
+                <div className="space-y-2">
+                  <p>No tasks found.</p>
+                  <Button onClick={() => window.location.href = '/Dashboard'}>
+                    Create your first task
+                  </Button>
+                </div>
+              ) : (
+                <p>No tasks match your current filters.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

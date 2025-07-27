@@ -6,29 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, Plus, CheckCircle } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
+import { useTasks } from "@/context/TasksContexts";
 
-// Mock Task type for demonstration
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  createdAt: Date;
-  dueDate?: Date;
-}
-
-interface TaskFormProps {
-  onAddTask: (task: Task) => void;
-}
-
-function TaskForm({ onAddTask }: TaskFormProps) {
+function TaskForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { addTask } = useTasks();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,21 +30,17 @@ function TaskForm({ onAddTask }: TaskFormProps) {
     setIsSubmitting(true);
 
     try {
-      const newTask: Task = {
-        id: Date.now().toString(),
+      await addTask({
         title: title.trim(),
         description: description.trim() || undefined,
         completed: false,
         priority: priority,
-        createdAt: new Date(),
-        dueDate: dueDate ? new Date(dueDate) : undefined
-      };
-
-      // Call the parent function to add the task
-      onAddTask(newTask);
+        createdAt: new Date().toISOString(),
+        dueDate: dueDate || undefined
+      });
 
       // Show success toast only after task is successfully created
-      toast.success(`Task "${newTask.title}" created successfully!`);
+      toast.success(`Task "${title.trim()}" created successfully!`);
 
       // Reset form only after successful creation
       setTitle('');
@@ -67,6 +51,7 @@ function TaskForm({ onAddTask }: TaskFormProps) {
     } catch (error) {
       // Handle any errors during task creation
       toast.error("Failed to create task. Please try again.");
+      console.error('Task creation error:', error);
     } finally {
       setIsSubmitting(false);
     }

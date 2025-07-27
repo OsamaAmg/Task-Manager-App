@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, User, Github, Chrome } from "lucide-react";
 import { toast } from "sonner";
+import { setAuthToken } from '@/lib/auth'; // Import the auth function
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -28,6 +30,7 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -67,6 +70,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
+      console.log('Attempting signup...');
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,6 +81,7 @@ export default function SignUpPage() {
         }),
       });
 
+      console.log('Signup response status:', res.status);
       const data = await res.json();
 
       if (!res.ok) {
@@ -84,10 +89,32 @@ export default function SignUpPage() {
         return;
       }
 
-      toast.success("Account created!");
-      // redirect to dashboard
-      // router.push("/tasks");
-    } catch {
+      console.log('Signup successful, received data:', { hasToken: !!data.token });
+
+      // CRITICAL: Store the authentication token if provided
+      if (data.token) {
+        setAuthToken(data.token);
+        console.log('Token stored successfully after signup');
+        toast.success("Account created! Welcome!");
+        
+        // Redirect to profile or tasks page
+        setTimeout(() => {
+          router.push('/profile'); // or '/tasks' depending on your preference
+        }, 1000);
+      } else {
+        // If no token is returned, that's okay for some signup flows
+        // User might need to verify email first or login separately
+        console.log('No token received from signup API - user may need to login');
+        toast.success("Account created! Please sign in to continue.");
+        
+        // Redirect to login page
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 1500);
+      }
+
+    } catch (error) {
+      console.error('Signup error:', error);
       toast.error("Signup failed");
     } finally {
       setIsLoading(false);

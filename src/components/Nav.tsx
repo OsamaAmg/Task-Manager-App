@@ -23,19 +23,19 @@ export default function Nav() {
             <NavigationMenuList className="flex">
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
-                  <Link href="/" className="text-primary">Home</Link>
+                  <Link href="/" className="text-primary font-medium">Home</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
-                  <Link href="/tasks" className="text-primary">Tasks</Link>
+                  <Link href="/tasks" className="text-primary font-medium">My tasks</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
-                  <Link href="/profile" className="text-primary">Profile</Link>
+                  <Link href="/profile" className="text-primary font-medium">Profile</Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>

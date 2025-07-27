@@ -1,4 +1,7 @@
+"use client";
+
 import Nav from "@/components/Nav";
+import { TaskProvider } from "@/context/TasksContexts";
 
 export default function MainLayout({
   children,
@@ -6,9 +9,9 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <TaskProvider>
       <Nav />
       {children}
-    </>
+    </TaskProvider>
   );
 }
