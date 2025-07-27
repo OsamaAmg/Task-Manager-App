@@ -27,6 +27,24 @@ export default function LoginPage() {
       return;
     }
 
+    // Basic email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    // Additional client-side check for common invalid domains
+    const emailDomain = email.split('@')[1];
+    if (emailDomain && (
+      emailDomain.includes('..') || 
+      emailDomain.startsWith('.') || 
+      emailDomain.endsWith('.') ||
+      emailDomain.includes(' ')
+    )) {
+      toast.error("Email domain format is invalid");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -81,7 +99,7 @@ export default function LoginPage() {
       // await signIn(provider);
       console.log(`${provider} login`);
       toast.success(`Signing in with ${provider}...`);
-    } catch (error) {
+    } catch {
       toast.error(`Failed to sign in with ${provider}`);
     }
   };
@@ -209,7 +227,7 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link
                 href="/auth/signup"
                 className="text-primary hover:underline font-medium"

@@ -49,6 +49,17 @@ export default function SignUpPage() {
       toast.error("Please enter a valid email address");
       return false;
     }
+    // Additional client-side check for common invalid domains
+    const emailDomain = formData.email.split('@')[1];
+    if (emailDomain && (
+      emailDomain.includes('..') || 
+      emailDomain.startsWith('.') || 
+      emailDomain.endsWith('.') ||
+      emailDomain.includes(' ')
+    )) {
+      toast.error("Email domain format is invalid");
+      return false;
+    }
     if (formData.password.length < 8) {
       toast.error("Password must be at least 8 characters long");
       return false;
@@ -126,7 +137,7 @@ export default function SignUpPage() {
       // Replace with your social auth logic
       console.log(`${provider} signup`);
       toast.success(`Signing up with ${provider}...`);
-    } catch (error) {
+    } catch {
       toast.error(`Failed to sign up with ${provider}`);
     }
   };

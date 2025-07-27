@@ -139,6 +139,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         dueDate: data.task.dueDate
       };
       setTasks(prev => [...prev, newTask]);
+      window.location.href = '/tasks';
     } catch (error) {
       console.error('Error adding task:', error);
       setError(error instanceof Error ? error.message : 'Failed to add task');
