@@ -289,7 +289,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       name: name.trim(),
       email: email.trim().toLowerCase(),
     };
@@ -381,7 +381,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Validation failed',
-        details: Object.values((error as any).errors).map((err: any) => err.message)
+        details: Object.values((error as unknown as { errors: Record<string, { message: string }> }).errors).map((err) => err.message)
       }, { status: 400 });
     }
     

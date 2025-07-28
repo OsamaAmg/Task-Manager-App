@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ export default function TasksPage() {
   };
 
   // API call to fetch tasks
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setError(null);
       const token = getAuthToken();
@@ -104,7 +104,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // API call to toggle task status
   const toggleTaskStatus = async (taskId: string) => {
@@ -137,8 +137,6 @@ export default function TasksPage() {
         throw new Error('Failed to update task');
       }
 
-      const updatedTask = await response.json();
-      
       // Update local state
       setTasks(prev => prev.map(t => 
         t._id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
@@ -226,11 +224,11 @@ export default function TasksPage() {
   // Load tasks on component mount
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   // Filtered and sorted tasks
   const filteredAndSortedTasks = useMemo(() => {
-    let filtered = tasks.filter((task) => {
+    const filtered = tasks.filter((task) => {
       const matchesSearch = task.title
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -395,7 +393,7 @@ export default function TasksPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Select
               value={statusFilter}
-              onValueChange={(value: any) => setStatusFilter(value)}
+              onValueChange={(value) => setStatusFilter(value as "pending" | "in-progress" | "completed" | "all")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
@@ -410,7 +408,7 @@ export default function TasksPage() {
 
             <Select
               value={priorityFilter}
-              onValueChange={(value: any) => setPriorityFilter(value)}
+              onValueChange={(value) => setPriorityFilter(value as "low" | "medium" | "high" | "all")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Priority" />
@@ -425,7 +423,7 @@ export default function TasksPage() {
 
             <Select
               value={sortBy}
-              onValueChange={(value: any) => setSortBy(value)}
+              onValueChange={(value) => setSortBy(value as "createdAt" | "dueDate" | "priority" | "title")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sort by" />

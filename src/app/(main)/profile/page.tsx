@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Mail, Edit2, Save, X, LogOut, AlertCircle, CheckCircle, XCircle, Loader2, Calendar, TrendingUp, Clock, Target, BarChart3, Camera, Trash2 } from "lucide-react";
+import { User, Mail, Edit2, Save, X, LogOut, AlertCircle, XCircle, Loader2, Calendar, TrendingUp, Clock, Target, BarChart3, Camera, Trash2 } from "lucide-react";
 import { getAuthHeaders, removeAuthToken, isAuthenticated, getAuthToken, isTokenExpired } from '@/lib/auth';
 import { toast } from 'sonner';
 
@@ -277,8 +277,9 @@ export default function ProfilePage() {
       setIsEditing(false);
       toast.success('Profile updated successfully!');
       
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save profile. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save profile. Please try again.';
+      toast.error(errorMessage);
       console.error('Save error:', error);
     } finally {
       setLoading('saving', false);
@@ -406,15 +407,6 @@ export default function ProfilePage() {
       year: 'numeric',
       month: 'long'
     });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-600';
-      case 'in-progress': return 'text-blue-600';
-      case 'pending': return 'text-yellow-600';
-      default: return 'text-gray-600';
-    }
   };
 
   const getStatusBadge = (status: string) => {

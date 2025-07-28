@@ -230,7 +230,7 @@ export default function TaskDetailPage() {
     }
 
     // Handle form changes
-    const handleInputChange = (field: keyof Task, value: any) => {
+    const handleInputChange = (field: keyof Task, value: unknown) => {
         if (!editedTask) return;
         
         clearMessages();
@@ -427,7 +427,7 @@ export default function TaskDetailPage() {
                                     Delete Task
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Are you sure you want to delete "{editedTask.title}"? This action cannot be undone and will permanently remove the task from your list.
+                                    Are you sure you want to delete &ldquo;{editedTask.title}&rdquo;? This action cannot be undone and will permanently remove the task from your list.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

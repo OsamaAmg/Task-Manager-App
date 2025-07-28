@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
 
     // Build filter object
-    const filter: any = { userId };
+    const filter: Record<string, unknown> = { userId };
 
     if (status && status !== 'all') {
       filter.status = status;
@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Build sort object
-    const sort: any = {};
-    sort[sortBy] = sortOrder;
+    const sort: { [key: string]: 1 | -1 } = {};
+    sort[sortBy] = sortOrder as 1 | -1;
 
     // Get tasks with pagination
     const skip = (page - 1) * limit;
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Validation failed',
-        details: Object.values((error as any).errors).map((err: any) => err.message)
+        details: Object.values((error as unknown as { errors: Record<string, { message: string }> }).errors).map((err) => err.message)
       }, { status: 400 });
     }
     
