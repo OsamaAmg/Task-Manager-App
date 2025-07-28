@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, Edit2, Save, X, LogOut, AlertCircle, CheckCircle, XCircle, Loader2, Calendar, TrendingUp, Clock, Target, BarChart3 } from "lucide-react";
+import { User, Mail, Edit2, Save, X, LogOut, AlertCircle, CheckCircle, XCircle, Loader2, Calendar, TrendingUp, Clock, Target, BarChart3, Camera, Trash2 } from "lucide-react";
 import { getAuthHeaders, removeAuthToken, isAuthenticated, getAuthToken, isTokenExpired } from '@/lib/auth';
 import { toast } from 'sonner';
 
@@ -19,7 +19,7 @@ interface UserProfile {
   name: string;
   email: string;
   bio?: string;
-  phone?: string;
+  avatar?: string;
   createdAt: string;
 }
 
@@ -49,7 +49,6 @@ interface TaskAnalytics {
 interface ValidationErrors {
   name?: string;
   email?: string;
-  phone?: string;
   bio?: string;
 }
 
@@ -57,6 +56,8 @@ interface LoadingStates {
   loading: boolean;
   saving: boolean;
   signingOut: boolean;
+  uploadingAvatar: boolean;
+  removingAvatar: boolean;
 }
 
 export default function ProfilePage() {
@@ -74,11 +75,35 @@ export default function ProfilePage() {
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
     loading: true,
     saving: false,
-    signingOut: false
+    signingOut: false,
+    uploadingAvatar: false,
+    removingAvatar: false
   });
 
   // Dialog states
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+
+  // Helper function to refresh profile data
+  const refreshProfile = async () => {
+    try {
+      const headers = getAuthHeaders();
+      const response = await fetch('/api/user/profile', {
+        headers: Object.keys(headers).length > 0 ? headers : undefined
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to refresh profile: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setProfile(data.user);
+      setEditedProfile(data.user);
+      
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      // Don't show error toast for refresh failures to avoid annoying users
+    }
+  };
 
   // Check authentication and fetch profile data
   useEffect(() => {
@@ -120,7 +145,7 @@ export default function ProfilePage() {
         console.log('Request headers:', headers);
 
         const response = await fetch('/api/user/profile', {
-          headers: headers
+          headers: Object.keys(headers).length > 0 ? headers : undefined
         });
 
         console.log('Profile API response status:', response.status);
@@ -182,15 +207,6 @@ export default function ProfilePage() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(profileData.email)) {
         errors.email = 'Please enter a valid email address';
-      }
-    }
-    
-    // Phone validation (optional but if provided, should be valid)
-    if (profileData.phone?.trim()) {
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-      const cleanPhone = profileData.phone.replace(/[\s\-\(\)]/g, '');
-      if (!phoneRegex.test(cleanPhone) && cleanPhone.length < 10) {
-        errors.phone = 'Please enter a valid phone number';
       }
     }
     
@@ -294,6 +310,85 @@ export default function ProfilePage() {
       toast.error('Failed to sign out. Please try again.');
       console.error('Sign out error:', error);
       setLoading('signingOut', false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setLoading('uploadingAvatar', true);
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('/api/user/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload avatar');
+      }
+
+      // Refresh profile data from server to ensure consistency
+      await refreshProfile();
+      
+      toast.success('Avatar uploaded successfully!');
+      
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload avatar');
+      console.error('Avatar upload error:', error);
+    } finally {
+      setLoading('uploadingAvatar', false);
+      // Reset the file input
+      event.target.value = '';
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setLoading('removingAvatar', true);
+
+    try {
+      const response = await fetch('/api/user/avatar', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove avatar');
+      }
+
+      // Refresh profile data from server to ensure consistency
+      await refreshProfile();
+      
+      toast.success('Avatar removed successfully!');
+      
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove avatar');
+      console.error('Avatar remove error:', error);
+    } finally {
+      setLoading('removingAvatar', false);
     }
   };
 
@@ -468,12 +563,48 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-6 mb-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src="" alt={profile.name} />
-                  <AvatarFallback className="text-lg">
-                    {getInitials(profile.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={profile.avatar || ''} alt={profile.name} />
+                    <AvatarFallback className="text-lg">
+                      {getInitials(profile.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <div className="absolute -bottom-2 -right-2 flex gap-1">
+                      <label htmlFor="avatar-upload" className="cursor-pointer">
+                        <div className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 shadow-lg transition-colors">
+                          {loadingStates.uploadingAvatar ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Camera className="h-3 w-3" />
+                          )}
+                        </div>
+                      </label>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={loadingStates.uploadingAvatar || loadingStates.removingAvatar}
+                      />
+                      {profile.avatar && (
+                        <button
+                          onClick={handleAvatarRemove}
+                          disabled={loadingStates.uploadingAvatar || loadingStates.removingAvatar}
+                          className="bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 shadow-lg transition-colors disabled:opacity-50"
+                        >
+                          {loadingStates.removingAvatar ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
                   {isEditing ? (
                     <div className="space-y-2">
@@ -502,7 +633,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="flex items-center gap-2">
@@ -527,30 +658,6 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                   )}
                 </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Phone
-                  </Label>
-                  {isEditing ? (
-                    <div>
-                      <Input
-                        id="phone"
-                        value={editedProfile.phone || ''}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="Enter your phone number"
-                        className={validationErrors.phone ? 'border-red-500' : ''}
-                      />
-                      {validationErrors.phone && (
-                        <p className="text-sm text-red-600 mt-1">{validationErrors.phone}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">{profile.phone || 'Not provided'}</p>
-                  )}
-                </div>          
               </div>
             </CardContent>
           </Card>

@@ -185,6 +185,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         bio: user.bio,
         phone: user.phone,
+        avatar: user.avatar,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       },
@@ -352,6 +353,7 @@ export async function PUT(request: NextRequest) {
         email: updatedUser.email,
         bio: updatedUser.bio,
         phone: updatedUser.phone,
+        avatar: updatedUser.avatar,
         createdAt: updatedUser.createdAt,
         updatedAt: updatedUser.updatedAt
       }
