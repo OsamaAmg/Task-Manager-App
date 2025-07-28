@@ -28,13 +28,13 @@ async function verifyToken(request: NextRequest) {
 // GET /api/tasks/[id] - Get a specific task by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await verifyToken(request);
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -86,13 +86,13 @@ export async function GET(
 // PUT /api/tasks/[id] - Update a specific task
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await verifyToken(request);
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
     const updates = await request.json();
 
     // Validate ObjectId format
@@ -174,13 +174,13 @@ export async function PUT(
 // DELETE /api/tasks/[id] - Delete a specific task
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await verifyToken(request);
     await connectDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {

@@ -33,7 +33,7 @@ export const removeAuthToken = (): void => {
   window.dispatchEvent(new CustomEvent('authTokenRemoved'));
 };
 
-export const getAuthHeaders = () => {
+export const getAuthHeaders = (): Record<string, string> => {
   const token = getAuthToken();
   if (!token) {
     return {};

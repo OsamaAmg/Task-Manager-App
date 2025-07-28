@@ -88,7 +88,7 @@ export default function ProfilePage() {
     try {
       const headers = getAuthHeaders();
       const response = await fetch('/api/user/profile', {
-        headers: Object.keys(headers).length > 0 ? headers : undefined
+        headers: Object.keys(headers).length > 0 ? headers : {}
       });
 
       if (!response.ok) {
@@ -145,7 +145,7 @@ export default function ProfilePage() {
         console.log('Request headers:', headers);
 
         const response = await fetch('/api/user/profile', {
-          headers: Object.keys(headers).length > 0 ? headers : undefined
+          headers: Object.keys(headers).length > 0 ? headers : {}
         });
 
         console.log('Profile API response status:', response.status);

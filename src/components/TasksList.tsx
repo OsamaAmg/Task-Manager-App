@@ -7,7 +7,6 @@ interface TasksListProps {
     onDeleteTask: (id: string) => void;
     selectedTasks?: string[];
     onSelectTask?: (id: string, selected: boolean) => void;
-    gridLayout?: boolean;
 }
 
 function TasksList({ 
@@ -15,8 +14,7 @@ function TasksList({
     onToggleComplete, 
     onDeleteTask, 
     selectedTasks = [], 
-    onSelectTask,
-    gridLayout = true 
+    onSelectTask
 }: TasksListProps) {
     if (tasks.length === 0) {
         return (
