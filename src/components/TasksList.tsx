@@ -7,6 +7,7 @@ interface TasksListProps {
     onDeleteTask: (id: string) => void;
     selectedTasks?: string[];
     onSelectTask?: (id: string, selected: boolean) => void;
+    gridLayout?: boolean;
 }
 
 function TasksList({ 
@@ -14,7 +15,8 @@ function TasksList({
     onToggleComplete, 
     onDeleteTask, 
     selectedTasks = [], 
-    onSelectTask
+    onSelectTask,
+    gridLayout = true
 }: TasksListProps) {
     if (tasks.length === 0) {
         return (
@@ -25,7 +27,7 @@ function TasksList({
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 col-span-full">
+        <div className={gridLayout ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 col-span-full" : "space-y-4 col-span-full"}>
             {tasks.map((task) => (
                 <TaskItem 
                     key={task.id} 
