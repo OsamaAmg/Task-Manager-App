@@ -6,10 +6,15 @@ if (!MONGODB_URI) {
   throw new Error("MONGODB_URI is not defined");
 }
 
-let cached = (global as any).mongoose;
+interface CachedConnection {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
+let cached = (global as unknown as { mongoose: CachedConnection }).mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = (global as unknown as { mongoose: CachedConnection }).mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {
@@ -17,7 +22,6 @@ async function connectDB() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI).then(mongoose => {
-      console.log("MongoDB connected");
       return mongoose;
     });
   }

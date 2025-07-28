@@ -13,10 +13,10 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center">
           {/* Logo at far left */}
-          <div className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <CheckCircle2 className="h-6 w-6" />
             <span className="text-xl font-semibold">TaskFlow</span>
-          </div>
+          </Link>
 
           {/* Navigation Menu pushed right */}
           <div className="ml-auto">
