@@ -39,6 +39,9 @@ export const setAuthToken = (token: string): void => {
   console.log('Token stored successfully');
   console.log('Verification - token:', localStorage.getItem('token') ? 'exists' : 'missing');
   console.log('Verification - authToken:', localStorage.getItem('authToken') ? 'exists' : 'missing');
+  
+  // Trigger a custom event to notify other components
+  window.dispatchEvent(new CustomEvent('authTokenSet', { detail: { token } }));
 };
 
 export const removeAuthToken = (): void => {
@@ -52,6 +55,9 @@ export const removeAuthToken = (): void => {
   localStorage.removeItem('jwt');
   
   console.log('All tokens removed');
+  
+  // Trigger a custom event to notify other components
+  window.dispatchEvent(new CustomEvent('authTokenRemoved'));
 };
 
 export const getAuthHeaders = () => {

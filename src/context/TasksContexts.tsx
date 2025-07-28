@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import type Task from "@/types/Task";
 
 type TasksContextType = {
@@ -28,14 +28,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   };
 
   // Fetch tasks from API
-  const refreshTasks = async () => {
+  const refreshTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const token = getAuthToken();
       
       if (!token) {
-        throw new Error('No authentication token found');
+        // If no token, just clear tasks and don't throw error
+        setTasks([]);
+        return;
       }
 
       const response = await fetch('/api/tasks', {
@@ -80,12 +82,47 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Load tasks on mount
+  // Load tasks on mount only if user is authenticated
   useEffect(() => {
-    refreshTasks();
+    const token = getAuthToken();
+    if (token) {
+      refreshTasks();
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for storage changes (when token is set/removed) and custom auth events
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const token = getAuthToken();
+      if (token) {
+        refreshTasks();
+      } else {
+        setTasks([]);
+      }
+    };
+
+    const handleAuthTokenSet = () => {
+      console.log('Auth token set event received, refreshing tasks...');
+      refreshTasks();
+    };
+
+    const handleAuthTokenRemoved = () => {
+      console.log('Auth token removed event received, clearing tasks...');
+      setTasks([]);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('authTokenSet', handleAuthTokenSet);
+    window.addEventListener('authTokenRemoved', handleAuthTokenRemoved);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authTokenSet', handleAuthTokenSet);
+      window.removeEventListener('authTokenRemoved', handleAuthTokenRemoved);
+    };
+  }, [refreshTasks]);
 
   // Add task via API
   const addTask = async (task: Omit<Task, "id">) => {
