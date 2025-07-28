@@ -134,11 +134,12 @@ export default function SignUpPage() {
 
   const handleSocialSignup = async (provider: "google" | "github") => {
     try {
-      // Replace with your social auth logic
-      console.log(`${provider} signup`);
-      toast.success(`Signing up with ${provider}...`);
-    } catch {
-      toast.error(`Failed to sign up with ${provider}`);
+      // Redirect to the OAuth endpoint
+      const authUrl = `/api/auth/${provider}`;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error(`${provider} OAuth error:`, error);
+      toast.error(`Failed to initiate ${provider} signup`);
     }
   };
 

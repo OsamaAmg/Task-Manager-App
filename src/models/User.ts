@@ -4,9 +4,12 @@ export interface IUser extends Document {
   _id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string; // Make password optional for OAuth users
   bio?: string;
   phone?: string;
+  avatar?: string; // Add avatar field
+  provider?: string; // Add provider field for OAuth
+  providerId?: string; // Add provider ID field
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +32,7 @@ const userSchema = new Schema(
     },
     password: { 
       type: String, 
-      required: [true, 'Password is required'],
+      required: false, // We'll handle validation in the application logic
       minlength: [6, 'Password must be at least 6 characters']
     },
     bio: {
@@ -41,6 +44,19 @@ const userSchema = new Schema(
       type: String,
       trim: true,
       match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+    },
+    avatar: {
+      type: String,
+      trim: true
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google', 'github'],
+      default: 'local'
+    },
+    providerId: {
+      type: String,
+      trim: true
     }
   },
   { 

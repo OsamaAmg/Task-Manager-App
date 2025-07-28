@@ -15,8 +15,15 @@ async function verifyToken(request: NextRequest) {
   }
 
   const token = authHeader.substring(7);
-  const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-  return decoded.id;
+  const decoded = jwt.verify(token, JWT_SECRET) as { id?: string; userId?: string; email: string };
+  
+  // Handle both token formats: { id } for login and { userId } for OAuth
+  const userId = decoded.id || decoded.userId;
+  if (!userId) {
+    throw new Error('Invalid token format');
+  }
+  
+  return userId;
 }
 
 export async function GET(request: NextRequest) {
@@ -297,6 +304,14 @@ export async function PUT(request: NextRequest) {
 
     // Handle password change
     if (newPassword && currentPassword) {
+      // Check if user has a password (OAuth users might not have one)
+      if (!currentUser.password) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Cannot change password for OAuth accounts. Please set a password first through your OAuth provider.' 
+        }, { status: 400 });
+      }
+
       // Verify current password
       const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentUser.password);
       if (!isCurrentPasswordValid) {
@@ -379,18 +394,12 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId = await verifyToken(request);
-    const { password } = await request.json();
-
-    if (!password) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Password confirmation required' 
-      }, { status: 400 });
-    }
+    const body = await request.json();
+    const { password, confirmOAuth } = body;
 
     await connectDB();
     
-    // Get user and verify password
+    // Get user
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ 
@@ -399,12 +408,30 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid password' 
-      }, { status: 400 });
+    // Handle OAuth users (who don't have passwords)
+    if (!user.password && user.provider !== 'local') {
+      if (!confirmOAuth) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Confirmation required for OAuth account deletion' 
+        }, { status: 400 });
+      }
+    } else {
+      // Handle local users (who have passwords)
+      if (!password) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Password confirmation required' 
+        }, { status: 400 });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Invalid password' 
+        }, { status: 400 });
+      }
     }
 
     // Delete user's tasks first

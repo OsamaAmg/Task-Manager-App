@@ -14,8 +14,15 @@ async function verifyToken(request: NextRequest) {
   }
 
   const token = authHeader.substring(7);
-  const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-  return decoded.id;
+  const decoded = jwt.verify(token, JWT_SECRET) as { id?: string; userId?: string; email: string };
+  
+  // Handle both token formats: { id } for login and { userId } for OAuth
+  const userId = decoded.id || decoded.userId;
+  if (!userId) {
+    throw new Error('Invalid token format');
+  }
+  
+  return userId;
 }
 
 // GET /api/tasks/[id] - Get a specific task by ID
