@@ -5,9 +5,10 @@ import User from '@/models/User';
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/github`;
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const GITHUB_REDIRECT_URI = `${BASE_URL}/api/auth/github`;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const FRONTEND_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const FRONTEND_URL = BASE_URL;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
     const githubUser = await userResponse.json();
 
     // Get user email (GitHub might not return email in the user object)
+
     let email = githubUser.email;
     if (!email) {
       const emailResponse = await fetch('https://api.github.com/user/emails', {
@@ -106,7 +108,9 @@ export async function GET(request: NextRequest) {
       });
       await user.save();
     } else {
+
       // Update existing user with GitHub info if needed
+
       if (!user.provider) {
         user.provider = 'github';
         user.providerId = githubUser.id.toString();
@@ -118,6 +122,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate JWT
+
     const token = jwt.sign(
       { 
         userId: user._id.toString(), 
@@ -129,6 +134,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Redirect to frontend with token
+    
     const redirectUrl = new URL(`${FRONTEND_URL}/auth/callback`);
     redirectUrl.searchParams.set('token', token);
     redirectUrl.searchParams.set('provider', 'github');

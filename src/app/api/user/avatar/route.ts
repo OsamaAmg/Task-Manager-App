@@ -27,7 +27,7 @@ async function verifyToken(request: NextRequest) {
 
 // Helper function to ensure upload directory exists
 function ensureUploadDir() {
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'avatars');
+  const uploadDir = path.resolve('/tmp/uploads/avatars');
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove old avatar file if it exists
-    if (user.avatar) {
-      const oldAvatarPath = path.join(process.cwd(), 'public', user.avatar);
+    if (user.avatar && user.avatar.startsWith('/tmp/uploads/avatars/')) {
+      const oldAvatarPath = user.avatar;
       if (fs.existsSync(oldAvatarPath)) {
         fs.unlinkSync(oldAvatarPath);
       }
@@ -79,13 +79,13 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await avatarFile.arrayBuffer());
     fs.writeFileSync(filepath, buffer);
 
-    // Update user with new avatar path
-    const avatarUrl = `/uploads/avatars/${filename}`;
+    // Update user with new avatar path (store full path for Vercel)
+    const avatarUrl = filepath;
     await User.findByIdAndUpdate(userId, { avatar: avatarUrl });
 
     return NextResponse.json({ 
       message: 'Avatar uploaded successfully',
-      avatarUrl
+      avatarUrl: `/api/user/avatar/serve?file=${filename}`
     });
 
   } catch (error) {
@@ -108,8 +108,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove avatar file if it exists
-    if (user.avatar) {
-      const avatarPath = path.join(process.cwd(), 'public', user.avatar);
+    if (user.avatar && user.avatar.startsWith('/tmp/uploads/avatars/')) {
+      const avatarPath = user.avatar;
       if (fs.existsSync(avatarPath)) {
         fs.unlinkSync(avatarPath);
       }

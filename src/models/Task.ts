@@ -50,6 +50,7 @@ const taskSchema = new Schema(
 );
 
 // Add indexes for better performance
+
 taskSchema.index({ userId: 1, createdAt: -1 });
 taskSchema.index({ userId: 1, status: 1 });
 taskSchema.index({ userId: 1, dueDate: 1 });

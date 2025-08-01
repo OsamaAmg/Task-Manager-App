@@ -5,15 +5,17 @@ import User from '@/models/User';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google`;
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const GOOGLE_REDIRECT_URI = `${BASE_URL}/api/auth/google`;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const FRONTEND_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const FRONTEND_URL = BASE_URL;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
 
   // If no code, redirect to Google OAuth
+
   if (!code) {
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleAuthUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID!);
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    
     // Exchange code for access token
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',

@@ -177,6 +177,13 @@ export async function GET(request: NextRequest) {
       }))
     };
 
+    // Convert avatar path to proper URL if it exists
+    let avatarUrl = user.avatar;
+    if (user.avatar && user.avatar.startsWith('/tmp/uploads/avatars/')) {
+      const filename = user.avatar.split('/').pop();
+      avatarUrl = `/api/user/avatar/serve?file=${filename}`;
+    }
+
     return NextResponse.json({
       success: true,
       user: {
@@ -185,7 +192,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         bio: user.bio,
         phone: user.phone,
-        avatar: user.avatar,
+        avatar: avatarUrl,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       },

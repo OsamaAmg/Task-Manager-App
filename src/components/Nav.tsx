@@ -13,7 +13,10 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center">
           {/* Logo at far left */}
-          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+          <Link
+            href="/Dashboard"
+            className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+          >
             <CheckCircle2 className="h-6 w-6" />
             <span className="text-xl font-semibold">TaskFlow</span>
           </Link>
@@ -24,12 +27,16 @@ export default function Nav() {
               <NavigationMenuList className="flex">
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
-                    <Link href="/tasks" className="text-primary font-medium">My tasks</Link>
+                    <Link href="/tasks" className="text-primary font-medium">
+                      My tasks
+                    </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
-                    <Link href="/profile" className="text-primary font-medium">Profile</Link>
+                    <Link href="/profile" className="text-primary font-medium">
+                      Profile
+                    </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
